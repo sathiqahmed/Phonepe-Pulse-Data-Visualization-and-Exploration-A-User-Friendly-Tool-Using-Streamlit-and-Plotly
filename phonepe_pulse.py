@@ -1,4 +1,3 @@
-#Python Libraries:
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -8,16 +7,40 @@ from streamlit_option_menu import option_menu
 from plotly.subplots import make_subplots
 import plotly.graph_objects as g
 import mysql.connector
-from sqlalchemy import create_engine 
+from sqlalchemy import create_engine ,text
 import seaborn as sns
+from PIL import Image
 
-#Connect to the MYSQL database:
+st.set_page_config(page_title="Phonepe_Pulse", layout="wide", initial_sidebar_state="expanded",)
+                   
+st.markdown(
+    """
+    <style>
+    body {
+        font-family: serif;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
+#display 
+st.title(":violet[Phonepe Pulse Data Visualization]")
+
+st.markdown("PhonePe Pulse is a comprehensive data platform that provides insights into India's consumer spending patterns across multiple categories such as groceries, fuel, dining, travel, and more. The platform aggregates data from over 500 million transactions processed on the PhonePe app, making it one of the largest sources of digital transaction data in India.")
+
+
+image = Image.open(r"C:\Users\win10\Desktop\Phonepe\phone.jpg")
+st.image(image)
+
+
+
+
+# Connect to the MYSQL database
 db = mysql.connector.connect(host="localhost",
                              user="root",
                              password="mnbvvbnmmnbv",
                              database="phonepe_pulse_data")
-
 
 
 #Define the SQL queries for each table:
@@ -29,7 +52,7 @@ top_trans_query = "SELECT * FROM my_top_transaction"
 top_users_query = "SELECT * FROM my_top_user"
 
 
-#Load the data into Pandas dataframes:
+# Load the data into Pandas dataframes
 agg_trans = pd.read_sql(agg_trans_query, con=db)
 agg_users = pd.read_sql(agg_users_query, con=db)
 map_trans = pd.read_sql(map_trans_query, con=db)
@@ -40,18 +63,16 @@ top_users = pd.read_sql(top_users_query, con=db)
 
 
 #Display Page View: 
-st.title(":violet[Phonepe Pulse Data Analytics]")
+st.title(":violet[Data Analytics]")
 
 
-
-
-#Define a dictionary of state name replacements:
+#List the India State name
 States = ['Andaman & Nicobar','Andhra Pradesh','Arunanchal Pradesh','Assam','Bihar','Chandigarh','Chhattisgarh','Dadara & Nagar Havelli',
           'Jammu & Kashmir','Jharkhand','Karnataka','Kerala','Ladakh','Lakshadweep','Madhya Pradesh','Maharashtra','Manipur','Meghalaya',
           'Mizoram','Nagaland','Odisha','Puducherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh',
           'Uttarakhand','West Bengal']
 
-
+# Define a dictionary of state name replacements
 state_replacements = {
     'andaman-&-nicobar-islands': 'Andaman & Nicobar Island','andhra-pradesh': 'Andhra Pradesh', 'arunachal-pradesh': 'Arunanchal Pradesh','assam': 'Assam',
     'bihar': 'Bihar','chandigarh': 'Chandigarh','chhattisgarh': 'Chhattisgarh','dadra-&-nagar-haveli-&-daman-&-diu': 'Dadara & Nagar Havelli','delhi': 'NCT of Delhi',
@@ -62,21 +83,26 @@ state_replacements = {
     'west-bengal': 'West Bengal',
 }
 
-# Replace state names in each dataframe:
+# Replace state names in each dataframe
 for tables in ['agg_trans', 'agg_users', 'map_trans', 'map_users', 'top_trans', 'top_users']:
     df = globals()[tables]  # Get the dataframe by name
     df['state'] = df['state'].replace(state_replacements)
 
-#Function Blocks:
+#FUNCTION BLOCKS
 def indiamap():
     c= map_trans.groupby(["state","year"]).sum()
     c.reset_index(inplace = True)
     return c 
 
 def transName():
-    p= agg_trans.groupby(["state","year","transaction_type","transaction_count"]).sum()
+    p= map_trans.groupby(["state","year","transaction_count","total_amount"]).sum()
     p.reset_index(inplace = True)
     return p
+
+def trantype():
+    t= agg_trans.groupby(["state","year","transaction_type","transaction_count","total_amount"]).sum()
+    t.reset_index(inplace= True)
+    return t
 
 def mapUser():
     u= map_users.groupby(["state","year"]).sum()
@@ -98,56 +124,16 @@ def mapUserState(option1,option2,option3):
     au.reset_index(inplace = True)
     return au
 
-def comp2state(option5,option6):
-    b= agg_trans[(agg_trans.state == option5) | (agg_trans.state == option6)]
-    b= b.groupby(["state","year"]).sum()
-    b.reset_index(inplace = True)
-    return b
 
-def c2state(option5,option6):
-    bt= agg_trans[(agg_trans.state == option5) | (agg_trans.state == option6)]
-    bt= bt.groupby(["state","year","transaction_name"]).sum()
-    bt.reset_index(inplace = True)
-    return bt
-
-def User2state(option5,option6):
-    comp_user= map_users[(map_users.state == option5) | (map_users.state == option6)]
-    comp_user= comp_user.groupby(["state","year"]).sum()
-    comp_user.reset_index(inplace = True)
-    return comp_user
-
-def avg_amounts():
-    avg= agg_users
-    avg.reset_index(inplace = True)
-    return avg
-
-# Define function to get top n items based on a column:
-def get_top_n(df, column, n):
-    return df.sort_values(by=column, ascending=False).head(n)   
-
-
-# Define function to plot a horizontal bar chart:
-def plot_bar_chart(df, x_col, y_col, title):
-    chart = (
-        df.plot(kind="barh", x=x_col, y=y_col, legend=False)
-        .set_title(title)
-        .get_figure()
-    )
-    st.pyplot(chart)
-
-# Define the number of top items to display:
-top_n = 10
-
-
-#Add Option Menu:
+#ADD OPTION MENU
 
 with st.sidebar:
-  selected = option_menu(menu_title=None, options=["India Map","State Data","Top 10 wise"], icons=["clipboard-data","award","capslock-fill","coin"], orientation="vertical")
+  selected = option_menu(menu_title=None, options=["India Wise","State Wise","Top 10 Wise"], orientation="vertical")         
 
-# Code or map page:
-  if selected=="India Map":
+# Code or map page
+  if selected=="India Wise":
     radio_button = ["Transactions","Users"]
-    option = st.radio("Which Visualisation You Need ", radio_button, index=1)
+    option = st.radio("Which type of visualisation you need ", radio_button, index=1)
 
     
     if option == "Transactions":
@@ -160,8 +146,8 @@ with st.sidebar:
       'Select the drop',("registered_users","apps_opened"))
 
   
-# Code for statewise page:
-  if selected=="State Data":
+# Code for statewise page
+  if selected=="State Wise":
     radio_button = ["Transactions","Users"]
     option = st.radio("Which visualisation you Need", radio_button, index=1)
 
@@ -191,19 +177,19 @@ with st.sidebar:
       option4 = st.selectbox(
       'Select the Drop',("registered_users","apps_opened"))
 
-  if selected=="Top 10 wise":
-     radio_button=["State wise","District wise"]
-     option= st.radio("Choose the Region", radio_button, index =1)
-           
+  
 
 
-#Button for Indian Map:
-if selected=="India Map":
+#Button for Indian Map
+if selected=="India Wise":
   if option == "Transactions":
-   c = indiamap()
-   p = transName()  
-   
-   fig=px.choropleth(
+   if st.button("Show"):
+    c = indiamap()
+    p = transName()  
+    t= trantype()
+ 
+
+    fig=px.choropleth(
        c,
        geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
        featureidkey='properties.ST_NM',
@@ -215,22 +201,26 @@ if selected=="India Map":
        width=800
       )
       
-   fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_layout(margin=dict(l=60, r=60, t=50, b=50))
 
-   st.write("Transactions")
-   st.write(fig)
+    st.write("Transactions")
+    st.write(fig)
 
-   pi = px.bar(p, x="state", y=option8, color="transaction_type",animation_frame="year", title="Transaction type and its Contribution with respect to State",width=900,height=700)
-      
-   st.write(pi)
-
+    pi = px.bar(p, x="state", y=option8,animation_frame= 'year' ,title="Transaction and its Contribution with respect to State",width=900,height=700)
+    st.write(pi)
+  
+    tt = px.bar(t, x="state", y=option8, color= "transaction_type", animation_frame= 'year' ,title="Transaction Types and its Contribution with respect to State",width=900,height=700)
+    st.write(tt)
+   
 
   if option == "Users":
-   u = mapUser()
+   if st.button("Show"):
+    u = mapUser()
   
   
       #india
-   fig=px.choropleth(
+    fig=px.choropleth(
        u,
        geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
        featureidkey='properties.ST_NM',
@@ -242,13 +232,13 @@ if selected=="India Map":
        width=800
       )
       
-   fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_geos(fitbounds="locations", visible=False)
 
-   st.write("About User")
-   st.write(fig)
+    st.write("About User")
+    st.write(fig)
 
-#Button for statewise:
-if selected=="State Data":
+#Button for statewise
+if selected=="State Wise":
   if option == "Transactions":
    if st.button('Show'):
     a= aggTrans(option1,option2,option3)
@@ -261,6 +251,7 @@ if selected=="State Data":
        featureidkey='properties.ST_NM',
        locations='state',
        color=option4,
+       animation_frame="year",
        color_continuous_scale='aggrnyl'
       )
 
@@ -298,49 +289,90 @@ if selected=="State Data":
 
     st.write(fi)
 
-if selected=="Top 10 wise":
-   
-   if option=="State wise":
-      
-#Get top 10 states and districts based on transaction count:
-      
-      top_states = top_trans.groupby("state").sum().sort_values(by="transaction_count", ascending=False).head(top_n) 
+# Define the number of top items to display
+top_n = 10
 
-      top_states_users = top_users.groupby("state").sum().sort_values(by="registered_users", ascending=False).head(top_n)
+if selected=="Top 10 Wise":
 
-#Create animated pie chart using Plotly Express:
+      
+      # Get top 10 states and districts based on transaction count
+      st.header("State Based Data")
+      
+      top_states = top_trans.groupby("state").sum().sort_values(by=["transaction_count"], ascending=False).head(top_n) 
+
+      # Create animated pie chart using Plotly Express
       fig = px.pie(
       top_states.reset_index(),
       names="state",
       values="transaction_count",
       
-      title="Top 10 States Based On Transaction Count",
+      title="Top 10 States based on transaction_count",
       height=500,
       )
 
-#Show the chart in the Streamlit app:
+     # Show the chart in the Streamlit app
+      st.plotly_chart(fig)
+
+      top_states_users = top_users.groupby("state").sum().sort_values(by="registered_users", ascending=False).head(top_n)
+      
+      # Convert "state" column to string data type
+      top_states_users["state"] = top_states_users.index.astype(str)
+
+    # Create bar chart using Plotly Express
+      fig = px.bar(
+       top_states_users,
+       x="state",
+       y="registered_users",
+       
+       title="Top 10 States based on Registered_users ",
+       height=500,
+       )
+ 
+     # Show the chart in the Streamlit app
       st.plotly_chart(fig)
       
      
+     #District Based
+      st.header("District Based Data")
+      top_districts_user = top_users.groupby("districts").sum().sort_values(by="registered_users", ascending=False).head(top_n)
 
-   if option=="District wise":
       
-      top_districts = top_users.groupby("districts").sum().sort_values(by="registered_users", ascending=False).head(top_n)
-
-      
-#Create animated pie chart using Plotly Express:
+      # Create animated pie chart using Plotly Express
       fig = px.pie(
-      top_districts.reset_index(),
+      top_districts_user.reset_index(),
       names="districts",
       values="registered_users",
-      title="Top 10 Districts Based On Registered Users",
+      title="Top 10 Districts based on Registered Users",
       height=500,
       )
 
-#Show the chart in the Streamlit app:
+     # Show the chart in the Streamlit app
       st.plotly_chart(fig)
-      
-     
+    
+      top_districts= top_trans.groupby("districts").sum().sort_values(by="transaction_count", ascending=False).head(top_n) 
+
+      # Convert "districts" column to string data type
+      top_districts["districts"] = top_districts.index.astype(str)
+
+    # Create bar chart using Plotly Express
+      fig = px.bar(
+       top_districts,
+       x="districts",
+       y="transaction_count",
+       
+       title="Top 10 Districts based on Transaction Count",
+       height=500,
+       )
+ 
+     # Show the chart in the Streamlit app
+      st.plotly_chart(fig)
+
+
+
+
+
+
+
 
 
 
